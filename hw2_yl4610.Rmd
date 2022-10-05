@@ -6,7 +6,7 @@ date: "2022-10-01"
 ---
 
 #question1
-```{r setup}
+```{r setup, message=FALSE, warning = FALSE}
 # load the libraries
 library(tidyverse)
 library(readxl)
@@ -21,10 +21,11 @@ select(line, station_name, station_latitude, station_longitude, route1:route11, 
 mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
 ```
 This dataset contains variables such as `r names(NYCtransit_data)`. 
-I used janitor to clean names, select to include variables that I want, and mutate to convert the character variable "entry" to logical variable.  
+I used read_csv to read the dataset. Then I used janitor to clean names, select to include variables that I want, and mutate to convert the character variable "entry" to logical variable.  
 It contains `r ncol(NYCtransit_data)` columns and `r nrow(NYCtransit_data)` rows.
 These data are not tidy because route number should be a variable instead of having 11 columns of different routes. I should convert `route` variables from wide to long format. In this way, it is more convenient to check on specific routes within one column.
 
+How many distinct stations are there?
 ```{r}
 NYCtransit_data %>% 
   select(station_name, line) %>% 
@@ -41,6 +42,7 @@ NYCtransit_data %>%
 ```
 84 stations are ADA compliant.
 
+What proportion of station entrances / exits without vending allow entrance?
 ```{r}
 NYCtransit_data %>% 
   filter(vending == "NO") %>% 
@@ -71,90 +73,136 @@ NYCtransit_data %>%
 There are 60 distinct stations serve the A train. Of the stations that serve the A train, 17 are ADA compliant.
 
 #question2
+
 Mr. Trash Wheel dataset:
-```{r}
+```{r, message=FALSE, warning = FALSE}
 # Read and clean the data
 MrTrash_data = read_excel(
-  "./datafiles/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+  "./datafiles/Trash_Wheel_Collection_Data.xlsx", 
 # specify the sheet in the Excel file and to omit non-data entries
   sheet = 1,
-  range = "A2:N534") %>%  
+  range = "A2:N549") %>%  
 # use reasonable variable names
 janitor::clean_names() %>%
 # omit rows that do not include dumpster-specific data
 drop_na(dumpster) %>% 
 # round sports balls to nearest integer and converts it to an integer variable
 mutate(
+  sports_balls = round(sports_balls),
   sports_balls = as.integer(sports_balls),
-  dumpster = as.numeric(dumpster),
+# change year to numeric variables 
+       year = as.numeric(year),
 # add an additional variable
-  Mr_Trash = "a"
+  from = "Mr"
   ) %>%
 # reorganize 
 relocate()
 ```
 
- Professor Trash Wheel dataset:
-```{r}
+Professor Trash Wheel dataset:
+```{r, message=FALSE, warning = FALSE}
 # Read and clean the data
 ProfTrash_data = read_excel(
-  "./datafiles/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+  "./datafiles/Trash_Wheel_Collection_Data.xlsx", 
 # specify the sheet in the Excel file and to omit non-data entries
   sheet = 2,
-  range = "A2:N116") %>%  
+  range = "A2:M96") %>%  
 # use reasonable variable names
 janitor::clean_names() %>%
 # omit rows that do not include dumpster-specific data
 drop_na(dumpster) %>% 
-# round sports balls to nearest integer and converts it to an integer variable
-mutate(
-  sports_balls = as.integer(sports_balls),
 # add an additional variable
-  Prof_Trash = "b"
-  ) %>%
+mutate (from = "Professor") %>%
 # reorganize 
 relocate()
 ```
 ```{r}
 # combine two datasets 
-inner_join(MrTrash_data, ProfTrash_data, by = "dumpster" )
+combine = bind_rows(MrTrash_data, ProfTrash_data)
 ```
 
-The total weight of trash collected by Professor Trash Wheel? The total number of sports balls collected by Mr. Trash Wheel in 2020?
+For Mr. Trash Wheel dataset:
+The names of variables are `r names(MrTrash_data)`. There are `r nrow(MrTrash_data)` rows and `r ncol(MrTrash_data)` columns.
 
+For Professor Trash Wheel dataset:
+The names of variables are `r names(ProfTrash_data)`. There are `r nrow(ProfTrash_data)` rows and `r ncol(ProfTrash_data)` columns.
+
+```{r}
+# filter to collect data in 2020
+MrTrash_data_new = 
+  MrTrash_data %>%
+  filter (year==2020)
+```
+
+For combine dataset:
+The names of variables are `r names(combine)`. There are `r nrow(combine)` rows and `r ncol(combine)` columns.Thus, there are 641 observations.
+There are `r `observations in the resulting dataset. 
+The total weight of trash collected by Professor Trash Wheel `r sum(pull(ProfTrash_data, weight_tons))`. The total number of sports balls collected by Mr. Trash Wheel in 2020 is `r sum(pull(MrTrash_data_new, sports_balls))`.
 
 #question3
+
 clean the data in pols-month.csv
-```{r}
+```{r, message=FALSE, warning = FALSE}
 #read pols-month.csv
 pols_month_data = read_csv( "./datafiles/fivethirtyeight_datasets/pols-month.csv") %>%
 janitor::clean_names() %>% 
 # break up the variable mon into integer variables
 separate(mon, into = c("year", "month", "day")) %>% 
 #  replace month number with month name
-mutate(month = month.name[as.numeric(month)]) %>%
+mutate(month = month.name[as.numeric(month)],
+ # change year to numeric variables 
+       year = as.numeric(year),
 # create a president variable taking values gop and dem
-mutate(president = prez_gop + prez_dem) %>%
+       president = ifelse(prez_dem == 1, "democratic", "republican")
+       ) %>%
 # remove prez_dem and prez_gop; and remove the day variable
 select(-prez_dem, -prez_gop, -day)
 ```
 clean the data in snp.csv 
-```{r}
+```{r, message=FALSE, warning = FALSE}
 #read snp.csv 
-pols_month_data = read_csv( "./datafiles/fivethirtyeight_datasets/snp.csv") %>%
+snp_data = read_csv( "./datafiles/fivethirtyeight_datasets/snp.csv") %>%
 janitor::clean_names() %>% 
-separate(date, into = c("month", "day", "year"))
-
-
-```
 # reformat date 
-mutate(date = as.Date(as.character(date), format = "%d/%m/%y"))
-# break up the variable date into integer variables
-separate(date, into = c("year", "month", "day")) %>% 
-#  reformat date 
-mutate(date = month.name[as.numeric(month)]) %>%
-
+mutate(date = as.Date(as.character(date), format = "%m/%d/%y")) %>%
+# break up the variable mon into integer variables
+separate(date, into = c("year", "month", "day")) %>%
+#  replace month number with month name
+mutate(month = month.name[as.numeric(month)],
+# change year to numeric variables 
+       year = as.numeric(year))%>%
 # remove the day variable
 select(-day) %>%
 # organize so that year and month are the leading columns
 relocate("year", "month")
+```
+tidy the unemployment data
+```{r, message=FALSE, warning = FALSE}
+#read unemployment.csv 
+unemploy_data = read_csv( "./datafiles/fivethirtyeight_datasets/unemployment.csv") %>%
+janitor::clean_names() %>% 
+# switch from “wide” to “long” format
+  pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to = "unemployment") %>% 
+#  replace month number with month name
+mutate(
+  month = recode (month, "jan"=1, "feb"=2, "mar"=3, "apr"=4, "may"=5, "jun"=6, "jul"=7, "aug"=8, "sep"=9, "oct"=10, "nov"=11, "dec"=12),
+  month = month.name[as.numeric(month)])
+
+```
+Join the datasets by merging snp into pols, and merging unemployment into the result
+```{r}
+threedatasets = 
+ left_join(pols_month_data, snp_data, by = c("year", "month")) %>% 
+ left_join(unemploy_data, by = c("year", "month"))
+```
+
+Names of variables in pols_month_data are `r names(pols_month_data)`. There are `r nrow(pols_month_data)` rows and `r ncol(pols_month_data)` columns. Dimension is `r dim(pols_month_data)` and range of years is `r range(pull(pols_month_data, year))`.
+
+Names of variables in snp_data are `r names(snp_data)`. There are `r nrow(snp_data)` rows and `r ncol(snp_data)` columns.Dimension is `r dim(snp_data)` and range of years is `r range(pull(snp_data, year))`.
+
+Names of variables in unemploy_data are `r names(unemploy_data)`. There are `r nrow(unemploy_data)` rows and `r ncol(unemploy_data)` columns.Dimension is `r dim(unemploy_data)` and range of years is `r range(pull(unemploy_data, year))`.
+
+Names of variables in threedatasets are `r names(threedatasets)`. There are `r nrow(threedatasets)` rows and `r ncol(threedatasets)` columns.Dimension is `r dim(threedatasets)` and range of years is `r range(pull(threedatasets, year))`.
