@@ -135,9 +135,7 @@ MrTrash_data_new =
 ```
 
 For combine dataset:
-The names of variables are `r names(combine)`. There are `r nrow(combine)` rows and `r ncol(combine)` columns.Thus, there are 641 observations.
-There are `r `observations in the resulting dataset. 
-The total weight of trash collected by Professor Trash Wheel `r sum(pull(ProfTrash_data, weight_tons))`. The total number of sports balls collected by Mr. Trash Wheel in 2020 is `r sum(pull(MrTrash_data_new, sports_balls))`.
+The names of variables are `r names(combine)`. There are `r nrow(combine)` rows and `r ncol(combine)` columns.Thus, there are 641 observations. The total weight of trash collected by Professor Trash Wheel `r sum(pull(ProfTrash_data, weight_tons))`. The total number of sports balls collected by Mr. Trash Wheel in 2020 is `r sum(pull(MrTrash_data_new, sports_balls))`.
 
 #question3
 
