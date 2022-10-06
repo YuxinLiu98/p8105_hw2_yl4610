@@ -10,7 +10,6 @@ date: "2022-10-01"
 # load the libraries
 library(tidyverse)
 library(readxl)
-library(dplyr)
 # Read and clean the data
 NYCtransit_data = read_csv( "./datafiles/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
 col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>%
@@ -26,6 +25,7 @@ It contains `r ncol(NYCtransit_data)` columns and `r nrow(NYCtransit_data)` rows
 These data are not tidy because route number should be a variable instead of having 11 columns of different routes. I should convert `route` variables from wide to long format. In this way, it is more convenient to check on specific routes within one column.
 
 How many distinct stations are there?
+The following code chunk selects station name and line, and then uses `distinct()` to obtain all unique combinations. As a result, the number of rows in this dataset is the number of unique stations.
 ```{r}
 NYCtransit_data %>% 
   select(station_name, line) %>% 
@@ -34,6 +34,7 @@ NYCtransit_data %>%
 There are 465 distinct stations.
 
 How many stations are ADA compliant?
+The next code chunk is similar, but filters according to ADA compliance as an initial step. This produces a dataframe in which the number of rows is the number of ADA compliant stations. 
 ```{r}
 NYCtransit_data %>% 
   filter(ada == TRUE) %>% 
@@ -43,6 +44,7 @@ NYCtransit_data %>%
 84 stations are ADA compliant.
 
 What proportion of station entrances / exits without vending allow entrance?
+To compute the proportion of station entrances / exits without vending allow entrance, we first exclude station entrances that do not allow vending. Then, we focus on the `entry` variable -- this logical, so taking the mean will produce the desired proportion.
 ```{r}
 NYCtransit_data %>% 
   filter(vending == "NO") %>% 
@@ -51,6 +53,7 @@ NYCtransit_data %>%
 ```
 0.3770 or 37.70% station entrances / exits without vending allow entrance
 
+Lastly, we write a code chunk to identify stations that serve the A train, and to assess how many of these are ADA compliant. As a first step, we tidy the data as alluded to previously; that is, we convert `route` from wide to long format. After this step, we can use tools from previous parts of the question (filtering to focus on the A train, and on ADA compliance; selecting and using `distinct` to obtain dataframes with the required stations in rows).
 ```{r}
 NYCtransit_data %>% 
   pivot_longer(
@@ -141,7 +144,7 @@ The names of variables are `r names(combine)`. There are `r nrow(combine)` rows 
 
 clean the data in pols-month.csv
 ```{r, message=FALSE, warning = FALSE}
-#read pols-month.csv
+#read pols-month.csv and clean names 
 pols_month_data = read_csv( "./datafiles/fivethirtyeight_datasets/pols-month.csv") %>%
 janitor::clean_names() %>% 
 # break up the variable mon into integer variables
@@ -153,16 +156,16 @@ mutate(month = month.name[as.numeric(month)],
 # create a president variable taking values gop and dem
        president = ifelse(prez_dem == 1, "democratic", "republican")
        ) %>%
-# remove prez_dem and prez_gop; and remove the day variable
+# remove prez_dem, prez_gop, and day variable
 select(-prez_dem, -prez_gop, -day)
 ```
 clean the data in snp.csv 
 ```{r, message=FALSE, warning = FALSE}
-#read snp.csv 
+#read snp.csv and clean names 
 snp_data = read_csv( "./datafiles/fivethirtyeight_datasets/snp.csv") %>%
 janitor::clean_names() %>% 
 # reformat date 
-mutate(date = as.Date(as.character(date), format = "%m/%d/%y")) %>%
+mutate(date = lubridate::mdy(date)) %>%
 # break up the variable mon into integer variables
 separate(date, into = c("year", "month", "day")) %>%
 #  replace month number with month name
@@ -176,7 +179,7 @@ relocate("year", "month")
 ```
 tidy the unemployment data
 ```{r, message=FALSE, warning = FALSE}
-#read unemployment.csv 
+#read unemployment.csv and clean names 
 unemploy_data = read_csv( "./datafiles/fivethirtyeight_datasets/unemployment.csv") %>%
 janitor::clean_names() %>% 
 # switch from “wide” to “long” format
@@ -188,7 +191,6 @@ janitor::clean_names() %>%
 mutate(
   month = recode (month, "jan"=1, "feb"=2, "mar"=3, "apr"=4, "may"=5, "jun"=6, "jul"=7, "aug"=8, "sep"=9, "oct"=10, "nov"=11, "dec"=12),
   month = month.name[as.numeric(month)])
-
 ```
 Join the datasets by merging snp into pols, and merging unemployment into the result
 ```{r}
